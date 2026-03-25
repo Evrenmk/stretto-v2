@@ -11,6 +11,11 @@
 (async function SaksScraper() {
   'use strict';
 
+  // ═══════════════════════ CASE CONFIG (change these per case) ═══════════════════════
+  const CASE_NAME     = 'iPic';
+  const CASE_URL      = 'https://cases.stretto.com/iPicTheaters/filed-claims/';
+  const EXPECTED_TOTAL = 500;   // rough estimate for progress bar — update if known
+
   // ═══════════════════════ CONFIG ═══════════════════════
   const BATCH_SIZE = 2;
   const BATCH_DELAY_MS = 2000;
@@ -25,9 +30,9 @@
     String(_now.getHours()).padStart(2, '0') +
     String(_now.getMinutes()).padStart(2, '0') +
     String(_now.getSeconds()).padStart(2, '0');
-  const XLSX_FILENAME = `CR_Saks_stretto-parser_${_dt}.xlsx`;
-  const JSON_FILENAME = `CR_Saks_stretto-parser_${_dt}.json`;
-  const STORAGE_KEY = 'SAKS_SCRAPER_STATE';
+  const XLSX_FILENAME = `CR_${CASE_NAME}_stretto-parser_${_dt}.xlsx`;
+  const JSON_FILENAME = `CR_${CASE_NAME}_stretto-parser_${_dt}.json`;
+  const STORAGE_KEY = `${CASE_NAME.toUpperCase()}_SCRAPER_STATE`;
   const REFRESH_COOLDOWN_MS = 60000;  // wait 60s after WAF refresh before resuming
 
   // ═══════════════════════ STATE (localStorage-backed) ═══════════════════════
@@ -132,7 +137,7 @@
       const iframe = document.createElement('iframe');
       iframe.id = '__waf_refresh_iframe';
       iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;';
-      iframe.src = 'https://cases.stretto.com/Saks/filed-claims/';
+      iframe.src = CASE_URL;
 
       let resolved = false;
       const timeout = setTimeout(() => {
@@ -222,7 +227,7 @@
       const newData = pageData.filter(d => !existingIds.has(d.claimId));
       S.basicData.push(...newData);
 
-      logProgress(S.basicData.length, 2159, `Page ${pageNum}`);
+      logProgress(S.basicData.length, EXPECTED_TOTAL, `Page ${pageNum}`);
 
       const nextBtn = document.querySelector('.paginate_button.next');
       if (!nextBtn) break;
@@ -679,12 +684,12 @@
     if (!window.claimsLinks || !window.runRecaptcha) {
       throw new Error(
         'Not on the Stretto claims page, or page not fully loaded.\n' +
-        'Navigate to https://cases.stretto.com/Saks/filed-claims/ ' +
+        `Navigate to ${CASE_URL} ` +
         'and wait for the table to appear.');
     }
 
     log('');
-    log('=== Saks Claims Scraper v3 (fully autonomous) ===');
+    log(`=== ${CASE_NAME} Claims Scraper v3 (fully autonomous) ===`);
     log('Paste once. Walk away. It handles WAF refreshes automatically.');
     log('');
 
