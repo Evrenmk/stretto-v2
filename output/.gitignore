@@ -1,0 +1,4 @@
+# Ignore all output files — these are generated locally and not committed
+*.xlsx
+*.xls
+*.json

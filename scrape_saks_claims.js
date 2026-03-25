@@ -18,8 +18,15 @@
   const REST_DURATION_MS = 30000;     // 30s rest every 50 claims
   const PAGE_WAIT_MS = 2500;
   const MAX_RETRIES = 2;
-  const XLSX_FILENAME = 'Saks_Filed_Claims.xlsx';
-  const JSON_FILENAME = 'saks_claims_data.json';
+  const _now = new Date();
+  const _dt = _now.getFullYear().toString() +
+    String(_now.getMonth() + 1).padStart(2, '0') +
+    String(_now.getDate()).padStart(2, '0') + '_' +
+    String(_now.getHours()).padStart(2, '0') +
+    String(_now.getMinutes()).padStart(2, '0') +
+    String(_now.getSeconds()).padStart(2, '0');
+  const XLSX_FILENAME = `CR_Saks_stretto-parser_${_dt}.xlsx`;
+  const JSON_FILENAME = `CR_Saks_stretto-parser_${_dt}.json`;
   const STORAGE_KEY = 'SAKS_SCRAPER_STATE';
   const REFRESH_COOLDOWN_MS = 60000;  // wait 60s after WAF refresh before resuming
 

@@ -12,6 +12,7 @@ import json
 import sys
 import os
 from pathlib import Path
+from datetime import datetime
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, numbers
@@ -197,8 +198,13 @@ def create_excel(data, output_path):
 def main():
     script_dir = Path(__file__).parent
 
+    dt = datetime.now().strftime('%Y%m%d_%H%M%S')
+    output_dir = script_dir / "output"
+    output_dir.mkdir(exist_ok=True)
+    default_output = str(output_dir / f"CR_Saks_stretto-parser_{dt}.xlsx")
+
     input_path = sys.argv[1] if len(sys.argv) > 1 else str(script_dir / "saks_claims_data.json")
-    output_path = sys.argv[2] if len(sys.argv) > 2 else str(script_dir / "Saks_Filed_Claims.xlsx")
+    output_path = sys.argv[2] if len(sys.argv) > 2 else default_output
 
     if not os.path.exists(input_path):
         print(f"Error: Input file not found: {input_path}")
