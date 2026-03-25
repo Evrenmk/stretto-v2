@@ -195,20 +195,38 @@ def create_excel(data, output_path):
     return len(data)
 
 
+def find_latest_json():
+    """Find the most recently modified CR_*_stretto-parser_*.json in Downloads."""
+    downloads = Path.home() / "Downloads"
+    matches = list(downloads.glob("CR_*_stretto-parser_*.json"))
+    if not matches:
+        return None
+    return str(max(matches, key=lambda p: p.stat().st_mtime))
+
+
 def main():
     script_dir = Path(__file__).parent
-
-    dt = datetime.now().strftime('%Y%m%d_%H%M%S')
     output_dir = script_dir / "output"
     output_dir.mkdir(exist_ok=True)
-    default_output = str(output_dir / f"CR_Saks_stretto-parser_{dt}.xlsx")
 
-    input_path = sys.argv[1] if len(sys.argv) > 1 else str(script_dir / "saks_claims_data.json")
+    # Resolve input
+    if len(sys.argv) > 1:
+        input_path = sys.argv[1]
+    else:
+        input_path = find_latest_json()
+        if not input_path:
+            print("Error: No CR_*_stretto-parser_*.json file found in Downloads.")
+            print("Run the browser scraper first, or pass a path explicitly.")
+            sys.exit(1)
+        print(f"Auto-detected: {input_path}")
+
+    # Derive output filename from input filename (preserves case name + datetime)
+    input_stem = Path(input_path).stem  # e.g. CR_iPic_stretto-parser_20260325_031909
+    default_output = str(output_dir / f"{input_stem}.xlsx")
     output_path = sys.argv[2] if len(sys.argv) > 2 else default_output
 
     if not os.path.exists(input_path):
         print(f"Error: Input file not found: {input_path}")
-        print(f"Make sure saks_claims_data.json is in {script_dir}")
         sys.exit(1)
 
     print(f"Reading {input_path}...")
