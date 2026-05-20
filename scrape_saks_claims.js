@@ -122,6 +122,24 @@
     return isNaN(num) ? null : num;
   }
 
+  // Returns a short text snippet if a session-expired / generic-error modal is
+  // visible on the page, otherwise null. Application-session expiry is distinct
+  // from WAF-token expiry and cannot be auto-refreshed by this script.
+  function detectSessionExpired() {
+    const modals = document.querySelectorAll(
+      '.modal:not(.hide), [role="dialog"], .swal2-popup, .alert-danger, .toast');
+    for (const m of modals) {
+      if (m.offsetParent === null) continue;
+      const text = (m.textContent || '').trim();
+      if (/session.*(expir|timeout|invalid)/i.test(text) ||
+          /please.*refresh.*(page|and try)/i.test(text) ||
+          /^an error occurred/i.test(text)) {
+        return text.slice(0, 200);
+      }
+    }
+    return null;
+  }
+
   // ═══════════════════════ WAF TOKEN REFRESH (hidden iframe) ═══════════════════════
 
   async function refreshWafToken() {
@@ -219,13 +237,39 @@
     document.querySelectorAll('tr.child-row').forEach(r => r.remove());
 
     let pageNum = 0;
+    let consecutiveNoNew = 0;
     while (true) {
       pageNum++;
+
+      const sessionMsg = detectSessionExpired();
+      if (sessionMsg) {
+        saveState();
+        log('SESSION EXPIRED detected during Phase A: "' + sessionMsg + '"');
+        log('Stopping. Refresh the page, re-apply filter + page size, and re-paste this script to resume.');
+        throw new Error('SESSION_EXPIRED');
+      }
+
       const pageData = readCurrentPageData();
 
       const existingIds = new Set(S.basicData.map(d => d.claimId));
       const newData = pageData.filter(d => !existingIds.has(d.claimId));
       S.basicData.push(...newData);
+
+      // Stuck-loop detector: pagination DOM is stale (rows present but all duplicates).
+      // This means the "next" click didn't actually advance — most often a silent
+      // session/auth failure where the AJAX call returned an error the DataTable
+      // swallowed without showing a modal.
+      if (pageData.length > 0 && newData.length === 0) {
+        consecutiveNoNew++;
+        if (consecutiveNoNew >= 3) {
+          saveState();
+          log('STUCK: 3 consecutive pages with no new claim IDs (pagination not advancing).');
+          log('Likely cause: silent session/auth failure. Refresh the page, re-apply filter + page size, and re-paste this script to resume.');
+          throw new Error('STUCK_LOOP');
+        }
+      } else {
+        consecutiveNoNew = 0;
+      }
 
       logProgress(S.basicData.length, EXPECTED_TOTAL, `Page ${pageNum}`);
 
@@ -408,6 +452,13 @@
       let wafExpired = false;
 
       for (let i = 0; i < remaining.length; i += BATCH_SIZE) {
+        const sessionMsg = detectSessionExpired();
+        if (sessionMsg) {
+          saveState();
+          log('SESSION EXPIRED detected during Phase B: "' + sessionMsg + '"');
+          log('Stopping. Refresh the page, re-apply filter + page size, and re-paste this script to resume.');
+          throw new Error('SESSION_EXPIRED');
+        }
         const batch = remaining.slice(i, i + BATCH_SIZE);
 
         const results = await Promise.allSettled(batch.map(async (claimId) => {
