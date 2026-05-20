@@ -12,8 +12,8 @@
   'use strict';
 
   // ═══════════════════════ CASE CONFIG (change these per case) ═══════════════════════
-  const CASE_NAME     = 'GrandSlamTrack';
-  const CASE_URL      = 'https://cases.stretto.com/grandslamtrack/filed-claims/';
+  const CASE_NAME     = 'IconAircraft';
+  const CASE_URL      = 'https://cases.stretto.com/iconaircraft/filed-claims/';
   const EXPECTED_TOTAL = 500;   // rough estimate for progress bar — update if known
 
   // ═══════════════════════ CONFIG ═══════════════════════
